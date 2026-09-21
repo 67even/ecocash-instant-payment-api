@@ -1,0 +1,38 @@
+# ---------------------------------------------------------------------------
+# Secrets — EcoCash EIP credentials and merchant PINs must never reach version control
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.json
+
+# ---------------------------------------------------------------------------
+# Jekyll build output
+# ---------------------------------------------------------------------------
+_site/
+docs/_site/
+.jekyll-cache/
+.jekyll-metadata
+.sass-cache/
+docs/Gemfile.lock
+vendor/
+
+# ---------------------------------------------------------------------------
+# Language / tooling noise
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------------------------
+# Claude skill packaging and eval workspaces
+# ---------------------------------------------------------------------------
+*-workspace/
+*.skill
+*.zip

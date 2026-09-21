@@ -1,0 +1,11 @@
+{%- comment -%}
+  Replaces just-the-docs' own "This site uses Just the Docs" credit. The theme
+  pulls this include into BOTH the desktop sidebar footer (components/sidebar.html)
+  and the mobile footer (components/footer.html), so the EcoCash logo appears in
+  whichever one the viewport is showing. The non-affiliation disclaimer lives in
+  `footer_content` in _config.yml and is not repeated here.
+{%- endcomment -%}
+<a class="ecocash-mark" href="https://developers.ecocash.co.zw/portal" target="_blank" rel="noopener noreferrer">
+  <img src="{{ '/assets/images/ecocash-logo.svg' | relative_url }}"
+       alt="EcoCash developer portal" width="200" height="41">
+</a>

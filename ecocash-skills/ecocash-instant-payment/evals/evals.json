@@ -1,0 +1,116 @@
+{
+  "skill_name": "ecocash-instant-payment",
+  "evals": [
+    {
+      "id": 1,
+      "name": "laravel-ticket-checkout",
+      "prompt": "I'm building event ticket checkout in our Laravel 11 app and want customers to pay with EcoCash using the EcoCash Instant Payment (EIP) API - we have sandbox credentials from developers.ecocash.co.zw. Write the service class, the config, and a controller with two endpoints: one that starts payment for an order, and one the frontend polls to get the result. Save the files.",
+      "expected_output": "A Laravel service, config and controller that send the exact EIP charge body, keep the base path, save a unique clientCorrelator before charging, poll with the lookup endpoint and fulfil only on status SUCCESS.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "exact-field-names",
+          "text": "The charge body uses the exact keys charginginformation (all lowercase), chargeMetaData and terminalID"
+        },
+        {
+          "id": "charge-path",
+          "text": "The charge is POSTed to /transactions/amount/ (trailing slash) under the base URL https://developers.ecocash.co.zw/sandbox/payment/v1 without dropping /sandbox/payment/v1"
+        },
+        {
+          "id": "lookup-path",
+          "text": "The polling endpoint uses GET /{endUserId}/transactions/amount/{clientCorrelator}"
+        },
+        {
+          "id": "unique-correlator-saved",
+          "text": "A new unique clientCorrelator is generated per payment and stored on the order before or with the charge request"
+        },
+        {
+          "id": "status-not-http",
+          "text": "The code treats the charge's HTTP 200 as accepted/pending and marks the order paid only when the returned status is SUCCESS"
+        },
+        {
+          "id": "no-resend-on-timeout",
+          "text": "A timeout or network error does not trigger a second charge; the code or its notes say to look the payment up instead"
+        },
+        {
+          "id": "config-not-hardcoded",
+          "text": "Credentials and merchantPin come from config/env, not hard-coded in the service"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "broken-refund-payload",
+      "prompt": "Our EcoCash EIP refunds keep failing in the sandbox - POST /transactions/refund/ returns 400, and sometimes 409. The original charge was USD 20 and on the charge we only checked for HTTP 200. Here is the refund body we send:\n\n{\"clientCorrelator\":\"REF-001\",\"referenceCode\":\"INV-88\",\"tranType\":\"MER\",\"endUserId\":\"0772123456\",\"paymentAmount\":{\"chargingInformation\":{\"amount\":25,\"currency\":\"USD\",\"description\":\"Refund INV-88\"},\"chargeMetadata\":{\"channel\":\"WEB\"}},\"merchantCode\":\"287164\",\"merchantPin\":\"1234\",\"merchantNumber\":\"778503033\",\"countryCode\":\"ZW\",\"terminalId\":\"TERM001\",\"location\":\"Harare\",\"superMerchantName\":\"EcoCash Sandbox\",\"merchantName\":\"Test Merchant\"}\n\nWhat's wrong? Write your findings to findings.md and a corrected body to refund.json.",
+      "expected_output": "findings.md listing every defect with its cause, and a refund.json that fixes them.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "charginginformation",
+          "text": "Identifies chargingInformation must be charginginformation (all lowercase)"
+        },
+        {
+          "id": "other-casing",
+          "text": "Identifies chargeMetadata must be chargeMetaData and terminalId must be terminalID"
+        },
+        {
+          "id": "original-reference",
+          "text": "Identifies the missing originalEcocashReference (the original charge's EcoCash reference/transactionId)"
+        },
+        {
+          "id": "new-correlator",
+          "text": "Says the hard-coded/reused clientCorrelator REF-001 must be a new unique value"
+        },
+        {
+          "id": "amount-exceeds",
+          "text": "Flags that the refund amount 25 exceeds the original 20 (E012/422)"
+        },
+        {
+          "id": "success-only",
+          "text": "Explains the 409 as the original charge not being SUCCESS (HTTP 200 on the charge only meant accepted) or already refunded"
+        },
+        {
+          "id": "trantype-disagreement",
+          "text": "Addresses tranType: says the documentation specifies REF/REV while the portal's samples/Playground send MER, without presenting one as confirmed"
+        },
+        {
+          "id": "refund-json-lints",
+          "text": "refund.json passes `eip_cli.py lint` with no errors"
+        },
+        {
+          "id": "no-invented-fields",
+          "text": "refund.json contains only documented EIP fields: `eip_cli.py lint` reports no 'not a documented EIP field' warnings"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "dotnet-404-base-path",
+      "prompt": "Every request from our .NET 8 app to the EcoCash EIP sandbox returns 404, although the same body works in the portal's API Playground. Our setup:\n\n_http.BaseAddress = new Uri(\"https://developers.ecocash.co.zw/sandbox/payment/v1\");\nvar res = await _http.PostAsync(\"/transactions/amount/\", content);\n// status check\nvar s = await _http.GetAsync($\"/{msisdn}/transactions/amount/{correlator}\");\nvar status = doc.RootElement.GetProperty(\"transactionStatus\").GetString(); // throws KeyNotFoundException\n\nExplain what's wrong and write the fixed code to fix.md.",
+      "expected_output": "fix.md explaining that the leading-slash paths drop /sandbox/payment/v1 and that the status field is status, with corrected C#.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "base-path-dropped",
+          "text": "Explains that a leading-slash relative path replaces the BaseAddress path, so /sandbox/payment/v1 is dropped (requests go to /transactions/amount/ at the host root)"
+        },
+        {
+          "id": "correct-fix",
+          "text": "Fix: BaseAddress ending with / and paths without a leading slash (e.g. \"transactions/amount/\"), or full absolute URLs"
+        },
+        {
+          "id": "keeps-trailing-slash",
+          "text": "Keeps the trailing slash on transactions/amount/ (does not remove it)"
+        },
+        {
+          "id": "status-field",
+          "text": "Identifies that the documented response field is status (transactionStatus comes from the portal's SDK samples) and reads status, optionally with fallbacks"
+        },
+        {
+          "id": "http200-not-paid",
+          "text": "Notes that a 200 on the charge means accepted/PENDING, not paid"
+        }
+      ]
+    }
+  ]
+}

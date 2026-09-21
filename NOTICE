@@ -1,0 +1,20 @@
+EcoCash EIP Developer Guide
+Copyright (c) 2026 John Mugabe
+
+This project documents the EcoCash Instant Payment (EIP) HTTP interface as
+presented on the EcoCash Developer Portal (https://developers.ecocash.co.zw/portal),
+and the behaviour described there, as checked on 21 September 2026.
+
+It is an independent, community-maintained project. It is not affiliated with,
+endorsed by, or supported by EcoCash Holdings Zimbabwe Limited or any of its
+subsidiaries. "EcoCash", the EcoCash logo and any related marks are the property
+of their respective owner and are used here only to identify the API being
+documented.
+
+The files in reference/ reproduce material from the EcoCash Developer Portal for
+reference, together with the author's clearly marked review notes. That portal
+material remains the property of its owner and is not covered by this project's
+licence.
+
+The guide, the code examples and the tools are licensed under the MIT License.
+See LICENSE.

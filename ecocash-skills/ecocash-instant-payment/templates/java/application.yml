@@ -1,0 +1,13 @@
+eip:
+  base-url: ${EIP_BASE_URL:https://developers.ecocash.co.zw/sandbox/payment/v1}
+  username: ${EIP_USERNAME}
+  password: ${EIP_PASSWORD}
+  merchant-code: ${EIP_MERCHANT_CODE}
+  merchant-pin: ${EIP_MERCHANT_PIN}
+  merchant-number: ${EIP_MERCHANT_NUMBER}
+  terminal-id: ${EIP_TERMINAL_ID}
+  merchant-name: ${EIP_MERCHANT_NAME}
+  super-merchant-name: ${EIP_SUPER_MERCHANT_NAME}
+  channel: ${EIP_CHANNEL:WEB}
+  location: ${EIP_LOCATION:Harare}
+  refund-tran-type: ${EIP_REFUND_TRAN_TYPE:REF}

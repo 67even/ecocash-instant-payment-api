@@ -1,0 +1,77 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Nothing here needs more than to read the checkout.
+permissions:
+  contents: read
+
+jobs:
+  site:
+    name: Site - build, meta tags, structured data, links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - name: Render the site the way GitHub Pages will
+        run: |
+          VERSION=$(sed -n 's/^remote_theme:.*@v\(.*\)$/\1/p' docs/_config.yml)
+          if [ -z "$VERSION" ]; then
+            echo "::error::could not read the theme version from docs/_config.yml"
+            exit 1
+          fi
+          echo "building against just-the-docs $VERSION"
+          gem install --no-document jekyll -v '~> 4.4'
+          gem install --no-document just-the-docs -v "$VERSION"
+          gem install --no-document jekyll-seo-tag jekyll-sitemap
+          printf 'remote_theme: null\ntheme: just-the-docs\nplugins:\n  - jekyll-seo-tag\n  - jekyll-sitemap\n' > /tmp/local-theme.yml
+          cd docs && jekyll build --config _config.yml,/tmp/local-theme.yml -d /tmp/site/ecocash-instant-payment-api --baseurl /ecocash-instant-payment-api
+      - name: Every page carries its SEO tags, and the sitemap is complete
+        run: python3 tools/check_meta_tags.py /tmp/site/ecocash-instant-payment-api
+      - name: Every JSON-LD block parses and carries its required properties
+        run: python3 tools/check_structured_data.py /tmp/site/ecocash-instant-payment-api
+      - name: Every link, anchor and image in the built site resolves
+        run: python3 tools/check_built_site.py /tmp/site/ecocash-instant-payment-api /ecocash-instant-payment-api
+
+  sources:
+    name: Sources - links, generated pages, skill, cards, examples, secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Every internal link and anchor in the Markdown resolves
+        run: python3 tools/check_links.py
+      - name: The Jekyll site is configured correctly
+        run: python3 tools/check_docs_site.py
+      - name: docs/ is in sync with README.md and reference/
+        run: python3 tools/build_docs.py --check
+      - name: The Claude skill is in sync with README.md and reference/
+        run: python3 tools/build_skill.py --check
+      - name: The Claude skill will load and install (frontmatter, size, file references)
+        run: python3 tools/check_skill.py
+      - name: Every page has its Open Graph card
+        run: python3 tools/build_og_images.py --check
+      - name: The README's code examples and the skill's CLI work against a mock EIP server
+        run: |
+          pip install requests
+          python3 tools/test_examples.py
+      - name: No EIP credentials are committed
+        run: |
+          # Placeholders (sbx_yourusername, your_password, sbx_test/secret in the mock) are allowed.
+          if grep -rInE '(EIP_PASSWORD=[^[:space:]#]+)|(sbx_[A-Za-z0-9]{6,})' --exclude-dir=.git --exclude-dir=.github . \
+             | grep -vE 'EIP_PASSWORD=(your_password|secret)|sbx_yourusername|sbx_test'; then
+            echo "::error::something that looks like an EIP credential was committed"
+            exit 1
+          fi
+          echo "no credentials found"

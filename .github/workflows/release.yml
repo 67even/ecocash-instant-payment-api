@@ -1,0 +1,54 @@
+name: release
+
+# Push a version tag (git tag -a v1.0.1 -m "v1.0.1" && git push origin v1.0.1) and this
+# publishes a GitHub Release with notes from CHANGELOG.md and the Claude skill zip attached.
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to (re)publish, e.g. v1.0.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish the GitHub Release
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: The skill and the site are in sync with the README
+        run: |
+          python3 tools/build_skill.py --check
+          python3 tools/check_skill.py
+          python3 tools/build_docs.py --check
+      - name: Package the Claude skill
+        run: |
+          cd ecocash-skills
+          zip -r ../ecocash-instant-payment.zip ecocash-instant-payment \
+            -x '*/evals/*' -x '*/.DS_Store' -x '*/__pycache__/*'
+          cd .. && unzip -l ecocash-instant-payment.zip | grep -q 'ecocash-instant-payment/SKILL.md'
+      - name: Release notes from CHANGELOG.md
+        run: |
+          python3 tools/release_notes.py "$TAG" > notes.md
+          python3 tools/release_notes.py "$TAG" --title > title.txt
+      - name: Create or update the release
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$(cat title.txt)" --notes-file notes.md --latest
+            gh release upload "$TAG" ecocash-instant-payment.zip --clobber
+          else
+            gh release create "$TAG" ecocash-instant-payment.zip \
+              --title "$(cat title.txt)" --notes-file notes.md --verify-tag --latest
+          fi
